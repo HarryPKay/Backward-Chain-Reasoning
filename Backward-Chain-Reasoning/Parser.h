@@ -69,7 +69,7 @@ namespace backward_chain_reasoning
 	/* 
 	 * Converts a boolean expression into Polish Prefix notation for easier computation. Using
 	 * Edsger Dijkstra algorithm adapted to be used for boolean expressions rather than normal arithmetic
-	 * Based of psuedo code from https://en.wikipedia.org/wiki/Shunting-yard_algorithm, section 
+	 * Based off the psuedo code from https://en.wikipedia.org/wiki/Shunting-yard_algorithm, section 
 	 * "The algorithm in detail"  
 	 * 
 	 * Precondition: A boolean expression in Compounding Normal Form and in Infix notation is passed

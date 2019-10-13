@@ -26,5 +26,8 @@
     <ClInclude Include="ParserTests.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="KnowledgeBase.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
