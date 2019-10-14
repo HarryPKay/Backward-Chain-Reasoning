@@ -4,77 +4,228 @@
 #include "Parser.h"
 #include <sstream>
 #include <map>
+#include <algorithm>
 
 namespace backward_chain_reasoning
 {
 	using namespace std;
 
+	unordered_map<char, string> alternativeSymbols
+	{
+		{'^', "&"},
+		{'v', "|"}
+	};
+
 	class KnowledgeBase
 	{
 	public:
-
 		//TODO: make private and implement tell
 		vector<string> sentences;
-		//ask
 
-		// validate
-		// validation rules:
-		// left parenth must be closed at some point
-		// all ops must be preceded by a negation or a variable (except closing parenthesis).
-		// negation must be preceded with negation or variable
-		// variables must have op other than parenth and negation to join eachother.
+		static void cleanInput(string& input)
+		{
+			for (auto it = input.begin(); it != input.end(); ++it)
+			{
+				if (*it == ' ')
+				{
+					input.erase(it, it + 1);
+					--it;
+				}
+				else if (*it == '=' && *(it + 1) == '>')
+				{
+					input.erase(it, it + 1);
+					--it;
+				}
+				else
+				{
+					auto newSymbol = alternativeSymbols.find(*it);
+					if (newSymbol != alternativeSymbols.end())
+					{
+						input.replace(it, it + 1, newSymbol->second);
+					}
+				}
+			}
+		}
+
+		static bool validateTellInput(const string& input)
+		{
+			// left parenth must be closed at some point
+
+			bool containsImplication = false;
+
+			for (size_t i = 0; i < input.size(); ++i)
+			{
+				if (input[i] == implication)
+				{
+					containsImplication = true;
+				}
+
+				if (isOperator(input[i]))
+				{
+					
+					if (input[i] == negation)
+					{
+						if (i + 1 >= input.size() 
+							|| (input[i + 1] != negation && isOperator(input[i + 1])))
+						{
+							cerr << "negation (~) must be post fixed by a variable.\n";
+							return false;
+						}
+					}
+					else
+					{
+						if (i == 0 
+							|| i + 1 >= input.size() 
+							|| isOperator(input[i - 1]) 
+							|| isOperator(input[i + 1]))
+						{
+							cerr << input[i] << " must be post fixed and prefixed by a variable.\n";
+							return false;
+						}
+					}	
+				}
+
+				if (isPredicate(input[i]) && i + 1 < input.size())
+				{
+					if (!isOperator(input[i + 1]))
+					{
+						cerr << "Predicates must be joined by an operator.\n";
+						return false;
+					}
+				}
+			}
+
+			if (input.size() > 1 && !containsImplication)
+			{
+				cerr << "Non assertions must contain an implication.\n";
+				return false;
+			}
+
+			return true;
+		}
+
+		static bool validateAsk(string input)
+		{
+			if (input.size() == 2)
+			{
+				if (input[1] == '?')
+				{
+					input.erase(input.begin() + 1, input.begin() + 2);
+				}
+			}
+
+			return input.size() == 1 && isPredicate(input[0]);
+		}
+
+		void run()
+		{
+			cout << "\n\nThis is an extended propositional backward chaining.\n"
+				<< "Your knowledge base can only accept facts like P1 ^ P2 ^ ... ^ Pk => P,\n"
+				<< "P1 v P2 v...v Pk => P,\n or P.\n";
+			cout << "Now input your knowledge.\nType nil when done.\n";
+
+			string input;
+			do
+			{
+				cout << "> ";
+				getline(cin, input);
+				cleanInput(input);
+
+				if (input == "nil")
+				{
+					break;
+				}
+
+				if (validateTellInput(input))
+				{
+					tell(input);
+				}
+		
+			} while (input != "nil");
+
+			cout << "You can now query the knowledge base.\nType quit to exist\n";
+
+			do
+			{
+				cout << "> ";
+				getline(cin, input);
+
+				if (input == "quit")
+				{
+					break;
+				}
+
+				if (!validateAsk(input))
+				{
+					cerr << "Invalid statement, ask only takes a single letter predicate.\n";
+				}
+				else
+				{
+					if (ask(input))
+					{
+						cout << "yes\n";
+					}
+					else
+					{
+						cout << "no\n";
+					}
+				}
+
+			} while (input != "quit");
+
+			cout << "Program terminated.\n";
+		}
 
 		// tell
-		//query
-
 		void tell(string sentence)
 		{
+			assert(validateTellInput(sentence));
 			sentences.push_back(sentence);
-			// for every predicate, assign to vartoboolmapping and assume false
-			// if predicate by it self,  vartoboolmapping true
 		}
 
 		/*
-		 * Determines if the given hypothesis can be inferred from the knowledge base.
+		 * Determines if the given primitive can be inferred from the knowledge base.
 		 * 
 		 * Algorithm description:
-		 * The function will find all inference rules that infers the given hypothesis, for each of these
-		 * it will than recursively query each predicate of the rule until it can find an assertion
+		 * The function will find all inference rules that infers the given primitive, for each of these rules
+		 * it will than recursively query each predicate of the rule until it can find an assertion, another inference rule
 		 * or nothing. It stores those predicates that can be inferred back to an assertion as true in it's
-		 * predicateToBoolMapping map, which is then used to determine if the rule is true. If the rule is true
-		 * for all queries that lead up to the original hypothesis, then the hypothesis can be inferred from this
-		 * knowledge base.
+		 * predicateToBoolMapping map, which is then used to determine if the rule is true.
+		 * 
+		 * The algorithm is depth first search since it does not stop expanding nodes until it meets a base case.
+		 * It works with both conjunct and disjunct prepositions as it uses a parser understands these operations.
 		 */
-		bool ask(const string& hypothesis)
+		bool ask(const string& primitive)
 		{
+
 			unordered_map<string, bool> predicateToBoolMapping;
-			return ask(hypothesis, predicateToBoolMapping);
+			return ask(primitive, predicateToBoolMapping);
 		}
 
 	private:
-		bool ask(const string& hypothesis, unordered_map<string, bool>& predicateToBoolMapping)
+		bool ask(const string& primitive, unordered_map<string, bool>& predicateToBoolMapping)
 		{
 			// Base case:
-			// If the hypothesis itself exists in the sentences, it then has been asserted as a fact.
+			// If the primitive itself exists in the sentences of KB, it then has been asserted as a fact.
 
-			if (hypothesis.size() == 1 
-				&& find(sentences.begin(), sentences.end(), hypothesis) != sentences.end())
+			if (primitive.size() == 1 
+				&& find(sentences.begin(), sentences.end(), primitive) != sentences.end())
 			{
-				std::cout << hypothesis << " = T\n";
+				//std::cout << primitive << " = T\n";
 				return true;
 			}
 
-			// General case:
-			// The hypothesis does not exists as an assertion in the data base, so find an inference rule that
-			// implies that the hypothesis is true.
-			
-			// Get all rules that infer the hypothesis
-			for (const string& rule : fetchInferenceRules(hypothesis))
-			{
-				std::cout << "inference match: " << rule << "=>" << hypothesis << "\n";
 
-				// For every predicate of the inference rule, determine if it is in the sentences or it can be inferred
-				// by another rule or has been asserted as a fact by recursively calling this function.
+			// General case:
+			// The primitive does not exists as an assertion in the data base, so find an inference rule that
+			// implies that the primitive is true.
+			
+			// Get all rules that infer the primitive
+			for (const string& rule : fetchInferenceRules(primitive))
+			{
+				//std::cout << "inference match: " << rule << "=>" << primitive << "\n";
+
+				// For every predicate that belongs to the inference rule, recursively prove it.
 				for (char c : rule)
 				{
 					if (isOperator(c))
@@ -84,24 +235,25 @@ namespace backward_chain_reasoning
 					string predicate;
 					predicate.push_back(c);
 					
-					// Optimization: skip if predicate has already been evaluated.
+					// Optimization: skip proving the predicate if it has already been proved.
 					auto it = predicateToBoolMapping.find(predicate);
 					if (it == predicateToBoolMapping.end())
 					{
-						std::cout << "asking: " << predicate << "\n";
+						//std::cout << "asking: " << predicate << "\n";
 						predicateToBoolMapping.insert({ predicate, ask(predicate, predicateToBoolMapping) });
 					}
 
+					// Return when ever our inference rule is proven to be true.
 					if (evaluate(rule, predicateToBoolMapping))
 					{
-						std::cout << rule << "=>" << hypothesis << " can be inferred\n";
+						//std::cout << rule << "=>" << primitive << " can be inferred\n";
 						return true;
 					}
 				}
 			}
 
 			// If we couldn't infer anything, than return false.
-			std::cout << hypothesis << " = F\n";
+			//std::cout << primitive << " = F\n";
 			return false;
 		}
 

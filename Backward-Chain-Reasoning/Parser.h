@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cassert>
 
+/* This parser is used to evaluate boolean expressions by the knowledge base. */
 namespace backward_chain_reasoning
 {
 	using namespace std;
@@ -72,7 +73,7 @@ namespace backward_chain_reasoning
 	 * Edsger Dijkstra Shunting Yard algorithm, but adapted to be used for boolean expressions
 	 * rather than normal arithmetic.
 	 * 
-	 * Precondition: A boolean expression in Compounding Normal Form and in Infix notation.
+	 * Precondition: A boolean expression in in Infix notation.
 	 * Returns a boolean expression in Polish Prefix notation.
 	 */
 	inline vector<char> convertToPrefix(std::vector<char> tokens)

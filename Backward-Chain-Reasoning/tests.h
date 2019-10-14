@@ -80,13 +80,13 @@ namespace backward_chain_reasoning
 	{
 		/* Test sample 1 */
 		KnowledgeBase kb1;
-		kb1.sentences.push_back("A|B>E");
-		kb1.sentences.push_back("A&B>D");
-		kb1.sentences.push_back("D&E>F");
-		kb1.sentences.push_back("B&E>F");
-		kb1.sentences.push_back("A");
-		kb1.sentences.push_back("B");
-		kb1.sentences.push_back("C");
+		kb1.tell("A|B>E");
+		kb1.tell("A&B>D");
+		kb1.tell("D&E>F");
+		kb1.tell("B&E>F");
+		kb1.tell("A");
+		kb1.tell("B");
+		kb1.tell("C");
 		assert(kb1.ask("F"));
 		assert(kb1.ask("E"));
 		assert(kb1.ask("D"));
@@ -94,19 +94,19 @@ namespace backward_chain_reasoning
 
 		/* Test sample 2 */
 		KnowledgeBase kb2;
-		kb2.sentences.push_back("A&B&C&D>F");
-		kb2.sentences.push_back("B|E|G>F");
-		kb2.sentences.push_back("H&I>A");
-		kb2.sentences.push_back("J&K>B");
-		kb2.sentences.push_back("U|T|W>J");
-		kb2.sentences.push_back("I&J&T>P");
-		kb2.sentences.push_back("I&J&F>Q");
-		kb2.sentences.push_back("H");
-		kb2.sentences.push_back("I");
-		kb2.sentences.push_back("K");
-		kb2.sentences.push_back("D");
-		kb2.sentences.push_back("W");
-		kb2.sentences.push_back("C");
+		kb2.tell("A&B&C&D>F");
+		kb2.tell("B|E|G>F");
+		kb2.tell("H&I>A");
+		kb2.tell("J&K>B");
+		kb2.tell("U|T|W>J");
+		kb2.tell("I&J&T>P");
+		kb2.tell("I&J&F>Q");
+		kb2.tell("H");
+		kb2.tell("I");
+		kb2.tell("K");
+		kb2.tell("D");
+		kb2.tell("W");
+		kb2.tell("C");
 		assert(kb2.ask("F"));
 		assert(kb2.ask("A"));
 		assert(kb2.ask("B"));
@@ -116,13 +116,13 @@ namespace backward_chain_reasoning
 
 		/* Test sample 3 */
 		KnowledgeBase kb3;
-		kb3.sentences.push_back("A&B>C");
-		kb3.sentences.push_back("C|D>F");
-		kb3.sentences.push_back("F|G|H|P>X");
-		kb3.sentences.push_back("X&Y>Z");
-		kb3.sentences.push_back("A");
-		kb3.sentences.push_back("B");
-		kb3.sentences.push_back("Y");
+		kb3.tell("A&B>C");
+		kb3.tell("C|D>F");
+		kb3.tell("F|G|H|P>X");
+		kb3.tell("X&Y>Z");
+		kb3.tell("A");
+		kb3.tell("B");
+		kb3.tell("Y");
 		assert(kb3.ask("Z"));
 
 		cout << "testKnowledgeBaseAsk() successful.\n";
