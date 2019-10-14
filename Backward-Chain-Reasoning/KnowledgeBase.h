@@ -167,7 +167,7 @@ namespace backward_chain_reasoning
 		
 			} while (input != "nil");
 
-			cout << "You can now query the knowledge base.\nType quit to exist\n";
+			cout << "You can now query the knowledge base.\nType quit to exit\n";
 
 			do
 			{
@@ -210,21 +210,26 @@ namespace backward_chain_reasoning
 		}
 
 		/*
-		 * Determines if the given primitive can be inferred from the knowledge base.
+		 * Determines if the given query can be inferred from the knowledge base.
+		 * 
+		 * Precondition: A single letter predicate (primitive) query.
+		 * returns true if the query can be inferred from the knowledge base.
 		 * 
 		 * Algorithm description:
-		 * The function will find all inference rules that infers the given primitive, for each of these rules
-		 * it will than recursively query each predicate of the rule until it can find an assertion, another inference rule
-		 * or nothing. It stores those predicates that can be inferred back to an assertion as true in it's
-		 * predicateToBoolMapping map, which is then used to determine if the rule is true.
+		 * 
+		 * The function will find all inference rules that infers the given query, for each of these rules
+		 * it will than recursively query each predicate of the rule until it can find an assertion/fact.
+		 * It stores those facts found as true in a mapping of predicate to boolean. If those assertions follow all the
+		 * way back to the original query, then that query can be inferred by the knowledge vase.
 		 * 
 		 * The algorithm is depth first search since it does not stop expanding nodes until it meets a base case.
-		 * It works with both conjunct and disjunct prepositions as it uses a parser understands these operations.
+		 * It works with both conjunction and disjunction prepositions as it uses a parser in Parser.h
+		 * understands how to evaluate these expressions.
 		 */
-		bool ask(const string& primitive)
+		bool ask(const string& query)
 		{
 			unordered_map<string, bool> predicateToBoolMapping;
-			return ask(primitive, predicateToBoolMapping);
+			return ask(query, predicateToBoolMapping);
 		}
 
 	private:
