@@ -9,6 +9,12 @@ namespace backward_chain_reasoning
 {
 	using namespace std;
 
+	unordered_map<char, string> alternativeSymbols
+	{
+		{'^', "&"},
+		{'v', "|"}
+	};
+
 	const char openParenthesis = '(';
 	const char closeParenthesis = ')';
 
@@ -53,7 +59,7 @@ namespace backward_chain_reasoning
 
 	inline bool isPredicate(char c)
 	{
-		return c >= 'A' && c <= 'Z';
+		return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
 	}
 
 	inline bool isOperator(char c)

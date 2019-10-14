@@ -10,18 +10,9 @@ namespace backward_chain_reasoning
 {
 	using namespace std;
 
-	unordered_map<char, string> alternativeSymbols
-	{
-		{'^', "&"},
-		{'v', "|"}
-	};
-
 	class KnowledgeBase
 	{
 	public:
-		//TODO: make private and implement tell
-		vector<string> sentences;
-
 		static void cleanInput(string& input)
 		{
 			for (auto it = input.begin(); it != input.end(); ++it)
@@ -49,20 +40,47 @@ namespace backward_chain_reasoning
 
 		static bool validateTellInput(const string& input)
 		{
-			// left parenth must be closed at some point
-
-			bool containsImplication = false;
+			bool conjunctionFound = false;
+			bool disjunctionFound = false;
+			bool implicationFound = false;
 
 			for (size_t i = 0; i < input.size(); ++i)
 			{
+				if (!isPredicate(input[i]) && !isOperator(input[i]))
+				{
+					cerr << "'" << input[i] << "' " << "unrecognizable symbol.\n";
+					return false;
+				}
+
 				if (input[i] == implication)
 				{
-					containsImplication = true;
+					implicationFound = true;
+					if (i + 2 != input.size())
+					{
+						cerr << "Conclusion clause (after implication) can only be predicate.\n";
+						return false;
+					}
 				}
 
 				if (isOperator(input[i]))
 				{
-					
+					if (input[i] == conjunction)
+					{
+						conjunctionFound = true;
+					}
+					if (input[i] == disjunction)
+					{
+						disjunctionFound = true;
+					}
+
+					if (input[i] == closeParenthesis 
+						|| input[i] == openParenthesis
+						|| input[i] == iff)
+					{
+						cerr << "'" << input[i] << "' " << "Not supported.\n";
+						return false;
+					}
+
 					if (input[i] == negation)
 					{
 						if (i + 1 >= input.size() 
@@ -79,7 +97,7 @@ namespace backward_chain_reasoning
 							|| isOperator(input[i - 1]) 
 							|| isOperator(input[i + 1]))
 						{
-							cerr << input[i] << " must be post fixed and prefixed by a variable.\n";
+							cerr << "'" << input[i] << "' " << " must be post fixed and prefixed by a variable.\n";
 							return false;
 						}
 					}	
@@ -95,9 +113,15 @@ namespace backward_chain_reasoning
 				}
 			}
 
-			if (input.size() > 1 && !containsImplication)
+			if (input.size() > 1 && !implicationFound)
 			{
 				cerr << "Non assertions must contain an implication.\n";
+				return false;
+			}
+
+			if (conjunctionFound && disjunctionFound)
+			{
+				cerr << "Preposition must either be all conjunctions or all disjunctions.\n";
 				return false;
 			}
 
@@ -121,7 +145,7 @@ namespace backward_chain_reasoning
 		{
 			cout << "\n\nThis is an extended propositional backward chaining.\n"
 				<< "Your knowledge base can only accept facts like P1 ^ P2 ^ ... ^ Pk => P,\n"
-				<< "P1 v P2 v...v Pk => P,\n or P.\n";
+				<< "P1 v P2 v...v Pk => P, or P.\n";
 			cout << "Now input your knowledge.\nType nil when done.\n";
 
 			string input;
@@ -149,6 +173,7 @@ namespace backward_chain_reasoning
 			{
 				cout << "> ";
 				getline(cin, input);
+				cleanInput(input);
 
 				if (input == "quit")
 				{
@@ -179,6 +204,7 @@ namespace backward_chain_reasoning
 		// tell
 		void tell(string sentence)
 		{
+			cleanInput(sentence);
 			assert(validateTellInput(sentence));
 			sentences.push_back(sentence);
 		}
@@ -197,7 +223,6 @@ namespace backward_chain_reasoning
 		 */
 		bool ask(const string& primitive)
 		{
-
 			unordered_map<string, bool> predicateToBoolMapping;
 			return ask(primitive, predicateToBoolMapping);
 		}
@@ -283,5 +308,7 @@ namespace backward_chain_reasoning
 
 			return rules;
 		}
+
+		vector<string> sentences;
 	};
 }
