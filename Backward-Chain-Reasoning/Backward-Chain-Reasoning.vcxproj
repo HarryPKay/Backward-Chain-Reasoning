@@ -128,7 +128,7 @@
   <ItemGroup>
     <ClInclude Include="KnowledgeBase.h" />
     <ClInclude Include="Parser.h" />
-    <ClInclude Include="ParserTests.h" />
+    <ClInclude Include="tests.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -23,10 +23,10 @@
     <ClInclude Include="Parser.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="ParserTests.h">
+    <ClInclude Include="KnowledgeBase.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="KnowledgeBase.h">
+    <ClInclude Include="tests.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

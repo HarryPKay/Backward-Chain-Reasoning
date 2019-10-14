@@ -1,55 +1,20 @@
 #pragma once
 #include <cassert>
 #include "Parser.h"
+#include "KnowledgeBase.h"
 
 namespace backward_chain_reasoning
 {
-
-	inline void testReplaceImplications()
-	{
-		string expression = "A|B";
-		replaceImplications(expression);
-		assert("A|B" == expression);
-		expression = "A>B";
-		replaceImplications(expression);
-		assert("~A|B" == expression);
-		expression = "A>B>C>D";
-		replaceImplications(expression);
-		assert("~A|~B|~C|D" == expression);
-		expression = "~A>~B>C>~D";
-		replaceImplications(expression);
-		assert("~~A|~~B|~C|~D" == expression);
-		cout << "testReplaceImplications() successful.\n";
-		
-	}
-
-	inline void testReplaceDoubleNegations()
-	{
-		string expression = "A";
-		replaceDoubleNegations(expression);
-		assert("A" == expression);
-		expression = "~A";
-		replaceDoubleNegations(expression);
-		assert("~A" == expression);
-		expression = "~~A";
-		replaceDoubleNegations(expression);
-		assert("A" == expression);
-		expression = "~~A|~~B|~C|~D";
-		replaceDoubleNegations(expression);
-		assert("A|B|~C|~D" == expression);
-		cout << "testReplaceDoubleNegations() successful.\n";
-	}
-
 	inline void testShuntingYard()
 	{
 		vector<char> correctResult = { 'A', 'B', '|' };
 		vector<char> tokens = { 'A', '|', 'B' };
-		tokens = shuntingYard(tokens);
+		tokens = convertToPrefix(tokens);
 		assert(correctResult == tokens);
 
 		correctResult = { 'A', 'B', '&', 'C','|', 'D', 'E','|','F', '&', '|' };
 		tokens = { '(','(','A','&','B',')','|','C',')','|','(','(','D' ,'|', 'E',')','&' ,'F',')' };
-		tokens = shuntingYard(tokens);
+		tokens = convertToPrefix(tokens);
 		assert(correctResult == tokens);
 
 		cout << "testShuntingYard() successful.\n";
@@ -111,20 +76,62 @@ namespace backward_chain_reasoning
 
 	}
 
+	inline void testKnowledgeBaseAsk()
+	{
+		/* Test sample 1 */
+		KnowledgeBase kb1;
+		kb1.sentences.push_back("A|B>E");
+		kb1.sentences.push_back("A&B>D");
+		kb1.sentences.push_back("D&E>F");
+		kb1.sentences.push_back("B&E>F");
+		kb1.sentences.push_back("A");
+		kb1.sentences.push_back("B");
+		kb1.sentences.push_back("C");
+		assert(kb1.ask("F"));
+		assert(kb1.ask("E"));
+		assert(kb1.ask("D"));
+		assert(kb1.ask("P") == false);
+
+		/* Test sample 2 */
+		KnowledgeBase kb2;
+		kb2.sentences.push_back("A&B&C&D>F");
+		kb2.sentences.push_back("B|E|G>F");
+		kb2.sentences.push_back("H&I>A");
+		kb2.sentences.push_back("J&K>B");
+		kb2.sentences.push_back("U|T|W>J");
+		kb2.sentences.push_back("I&J&T>P");
+		kb2.sentences.push_back("I&J&F>Q");
+		kb2.sentences.push_back("H");
+		kb2.sentences.push_back("I");
+		kb2.sentences.push_back("K");
+		kb2.sentences.push_back("D");
+		kb2.sentences.push_back("W");
+		kb2.sentences.push_back("C");
+		assert(kb2.ask("F"));
+		assert(kb2.ask("A"));
+		assert(kb2.ask("B"));
+		assert(kb2.ask("J"));
+		assert(kb2.ask("P") == false);
+		assert(kb2.ask("Q"));
+
+		/* Test sample 3 */
+		KnowledgeBase kb3;
+		kb3.sentences.push_back("A&B>C");
+		kb3.sentences.push_back("C|D>F");
+		kb3.sentences.push_back("F|G|H|P>X");
+		kb3.sentences.push_back("X&Y>Z");
+		kb3.sentences.push_back("A");
+		kb3.sentences.push_back("B");
+		kb3.sentences.push_back("Y");
+		assert(kb3.ask("Z"));
+
+		cout << "testKnowledgeBaseAsk() successful.\n";
+	}
+
 	inline void allTests()
 	{
-		cout << "CNF tests begin:\n";
-		testReplaceImplications();
-		testReplaceDoubleNegations();
-		cout << "CNF tests end\n\n";
-
-		cout << "Calculation tests begin:\n";
 		testShuntingYard();
 		testEvaluate();
-		cout << "Calculation tests end\n\n";
-
-		cout << "Backward Chain Reasoning tests begin:\n";
-
-		cout << "Backward Chain Reasoning  tests end\n\n";
+		testKnowledgeBaseAsk();
 	}
 }

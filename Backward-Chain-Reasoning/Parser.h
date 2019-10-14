@@ -8,8 +8,8 @@ namespace backward_chain_reasoning
 {
 	using namespace std;
 
-	const char leftParenthesis = '(';
-	const char rightParenthesis = ')';
+	const char openParenthesis = '(';
+	const char closeParenthesis = ')';
 
 	const char negation = '~';
 	const char conjunction = '&';
@@ -17,11 +17,12 @@ namespace backward_chain_reasoning
 	const char implication = '>';
 	const char iff = '-';
 
-	/* Mappings for the shunting yard algorithm. */
+	/* Mappings for the shunting yard algorithm.
+	 * Higher precedence will be evaluated first. */
 	unordered_map<char, int> precedence
 		= {
-			{leftParenthesis, 5},
-			{rightParenthesis, 5},
+			{openParenthesis, 5},
+			{closeParenthesis, 5},
 			{negation, 4},
 			{conjunction, 3},
 			{disjunction, 2},
@@ -40,8 +41,8 @@ namespace backward_chain_reasoning
 
 	unordered_map<char, bool> leftAssociativity
 		= {
-			{leftParenthesis, true},
-			{rightParenthesis, false},
+			{openParenthesis, true},
+			{closeParenthesis, false},
 			{negation, false},
 			{conjunction, true},
 			{disjunction, true},
@@ -68,14 +69,13 @@ namespace backward_chain_reasoning
 
 	/* 
 	 * Converts a boolean expression into Polish Prefix notation for easier computation. Using
-	 * Edsger Dijkstra algorithm adapted to be used for boolean expressions rather than normal arithmetic
-	 * Based off the psuedo code from https://en.wikipedia.org/wiki/Shunting-yard_algorithm, section 
-	 * "The algorithm in detail"  
+	 * Edsger Dijkstra Shunting Yard algorithm, but adapted to be used for boolean expressions
+	 * rather than normal arithmetic.
 	 * 
-	 * Precondition: A boolean expression in Compounding Normal Form and in Infix notation is passed
+	 * Precondition: A boolean expression in Compounding Normal Form and in Infix notation.
 	 * Returns a boolean expression in Polish Prefix notation.
 	 */
-	inline vector<char> shuntingYard(std::vector<char> tokens)
+	inline vector<char> convertToPrefix(std::vector<char> tokens)
 	{
 		stack<char> operatorStack;
 		vector<char> postFixOutput;
@@ -94,7 +94,7 @@ namespace backward_chain_reasoning
 			if (isOperator(token))
 			{
 				while (!operatorStack.empty()
-					&& ((operatorStack.top() != leftParenthesis
+					&& ((operatorStack.top() != openParenthesis
 						&& precedence[operatorStack.top()] > precedence[token])
 						||
 						(isOperator(operatorStack.top())
@@ -107,14 +107,14 @@ namespace backward_chain_reasoning
 				operatorStack.push(token);
 			}
 
-			if (leftParenthesis == token)
+			if (openParenthesis == token)
 			{
 				operatorStack.push(token);
 			}
 
-			if (rightParenthesis == token)
+			if (closeParenthesis == token)
 			{
-				while (!operatorStack.empty() && operatorStack.top() != leftParenthesis)
+				while (!operatorStack.empty() && operatorStack.top() != openParenthesis)
 				{
 					postFixOutput.push_back(operatorStack.top());
 					operatorStack.pop();
@@ -133,7 +133,7 @@ namespace backward_chain_reasoning
 		// Remove any parenthesis.
 		for (int i = 0; i < postFixOutput.size(); ++i)
 		{
-			if (postFixOutput[i] == leftParenthesis || postFixOutput[i] == rightParenthesis)
+			if (postFixOutput[i] == openParenthesis || postFixOutput[i] == closeParenthesis)
 			{
 
 				postFixOutput.erase(postFixOutput.begin() + i, postFixOutput.begin() + i + 1);
@@ -142,64 +142,6 @@ namespace backward_chain_reasoning
 		}
 
 		return postFixOutput;
-	}
-
-	/*
-	 * Replaces all occurrences of P->Q for any P and Q to the 
-	 * equivalent form of ~P OR Q.
-	 */
-	inline void replaceImplications(string& expression)
-	{
-		for (size_t i = 0; i < expression.size(); ++i)
-		{
-			if (expression[i] == implication)
-			{
-				string newSubExpression;
-				auto startIt = expression.begin() + i - 1;
-				auto endIt = expression.begin() + i + 2;
-
-				newSubExpression.push_back(negation);
-				if (i - 2 >= 0 && expression[i - 2] == negation)
-				{
-					newSubExpression.push_back(negation);
-					--startIt;
-				}
-				newSubExpression.push_back(expression[i - 1]);
-				newSubExpression.push_back(disjunction);
-
-				newSubExpression.push_back(expression[i + 1]);
-				if (expression[i + 1] == negation)
-				{
-					newSubExpression.push_back(expression[i + 2]);
-					++endIt;
-				}
-				expression.replace(startIt, endIt, newSubExpression);
-			}
-		}
-	}
-
-	/*
-	 * Replaces all occurrences of ~~P for any P to the
-	 * equivalent form of P.
-	 */
-	inline void replaceDoubleNegations(string& expression)
-	{
-		for (size_t i = 0; i < expression.size(); ++i)
-		{
-			if (expression[i] == negation && expression[i + 1] == negation)
-			{
-				expression.replace(expression.begin() + i, expression.begin() + i + 2, "");
-			}
-		}
-	}
-
-	/* Converts boolean expression to conjunctive normal form.
-	 * TODO: Complete implementation, partially complete. */
-	inline string convertToCNF(string expression)
-	{
-		replaceImplications(expression);
-		replaceDoubleNegations(expression);
-		return expression;
 	}
 
 	/* 
@@ -211,15 +153,12 @@ namespace backward_chain_reasoning
 	 * returns the boolean evaluation of the given expression.
 	 * 
 	 */
-	inline bool evaluate(string expression, unordered_map<string, bool>& variableToBoolMapping)
+	inline bool evaluate(string expression, unordered_map<string, bool> variableToBoolMapping)
 	{
 		if (expression.size() == 1)
 		{
 			return variableToBoolMapping[expression];
 		}
-
-		// Evaluate() only understands OR, AND and negation, so convert to CFN.
-		expression = convertToCNF(expression);
 
 		// Convert to Polish Postfix for easier parsing.
 		vector<char> tokens;
@@ -227,7 +166,7 @@ namespace backward_chain_reasoning
 		{
 			tokens.push_back(e);
 		}
-		tokens = shuntingYard(tokens);
+		tokens = convertToPrefix(tokens);
 
 		stack<bool> evaluation;
 		while (!tokens.empty())
@@ -258,6 +197,14 @@ namespace backward_chain_reasoning
 					break;
 				case disjunction:
 					subEvaluation = evaluation.top() || rightOperand;
+					evaluation.pop();
+					break;
+				case implication:
+					subEvaluation = !evaluation.top() || rightOperand;
+					evaluation.pop();
+					break;
+				case iff:
+					subEvaluation = (!evaluation.top() || rightOperand) && (evaluation.top() || !rightOperand);
 					evaluation.pop();
 					break;
 				}
