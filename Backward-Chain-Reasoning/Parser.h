@@ -138,7 +138,7 @@ namespace backward_chain_reasoning
 		}
 
 		// Remove any parenthesis.
-		for (int i = 0; i < postFixOutput.size(); ++i)
+		for (size_t i = 0; i < postFixOutput.size(); ++i)
 		{
 			if (postFixOutput[i] == openParenthesis || postFixOutput[i] == closeParenthesis)
 			{
@@ -189,34 +189,36 @@ namespace backward_chain_reasoning
 			}
 			else
 			{
-				bool subEvaluation;
+				bool intermediateEvaluation;
 				const bool rightOperand = evaluation.top();
 				evaluation.pop();
 
 				switch (token)
 				{
 				case negation:
-					subEvaluation = !rightOperand;
+					intermediateEvaluation = !rightOperand;
 					break;
 				case conjunction:
-					subEvaluation = evaluation.top() && rightOperand;
+					intermediateEvaluation = evaluation.top() && rightOperand;
 					evaluation.pop();
 					break;
 				case disjunction:
-					subEvaluation = evaluation.top() || rightOperand;
+					intermediateEvaluation = evaluation.top() || rightOperand;
 					evaluation.pop();
 					break;
 				case implication:
-					subEvaluation = !evaluation.top() || rightOperand;
+					intermediateEvaluation = !evaluation.top() || rightOperand;
 					evaluation.pop();
 					break;
 				case iff:
-					subEvaluation = (!evaluation.top() || rightOperand) && (evaluation.top() || !rightOperand);
+					intermediateEvaluation = (!evaluation.top() || rightOperand) && (evaluation.top() || !rightOperand);
 					evaluation.pop();
 					break;
+				default:
+					;
 				}
 
-				evaluation.push(subEvaluation);
+				evaluation.push(intermediateEvaluation);
 			}
 		}
 

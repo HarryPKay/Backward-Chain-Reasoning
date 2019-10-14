@@ -188,11 +188,11 @@ namespace backward_chain_reasoning
 				{
 					if (ask(input))
 					{
-						cout << "yes\n";
+						cout << "\nCan " << input << " be inferred? Yes.\n";
 					}
 					else
 					{
-						cout << "no\n";
+						cout << "\nCan " << input << " be inferred? No.\n";
 					}
 				}
 
@@ -228,6 +228,7 @@ namespace backward_chain_reasoning
 		 */
 		bool ask(const string& query)
 		{
+			cout << "\n\nTrace:\nAsking: " << query << "\n";
 			unordered_map<string, bool> predicateToBoolMapping;
 			return ask(query, predicateToBoolMapping);
 		}
@@ -241,10 +242,9 @@ namespace backward_chain_reasoning
 			if (primitive.size() == 1 
 				&& find(sentences.begin(), sentences.end(), primitive) != sentences.end())
 			{
-				//std::cout << primitive << " = T\n";
+				cout << primitive << " is asserted\n";
 				return true;
 			}
-
 
 			// General case:
 			// The primitive does not exists as an assertion in the data base, so find an inference rule that
@@ -253,7 +253,7 @@ namespace backward_chain_reasoning
 			// Get all rules that infer the primitive
 			for (const string& rule : fetchInferenceRules(primitive))
 			{
-				//std::cout << "inference match: " << rule << "=>" << primitive << "\n";
+				cout << "inference rule match: " << rule << "=>" << primitive << "\n";
 
 				// For every predicate that belongs to the inference rule, recursively prove it.
 				for (char c : rule)
@@ -269,21 +269,21 @@ namespace backward_chain_reasoning
 					auto it = predicateToBoolMapping.find(predicate);
 					if (it == predicateToBoolMapping.end())
 					{
-						//std::cout << "asking: " << predicate << "\n";
+						cout << "Asking: " << predicate << "\n";
 						predicateToBoolMapping.insert({ predicate, ask(predicate, predicateToBoolMapping) });
 					}
 
 					// Return when ever our inference rule is proven to be true.
 					if (evaluate(rule, predicateToBoolMapping))
 					{
-						//std::cout << rule << "=>" << primitive << " can be inferred\n";
+						cout << primitive << " can be inferred by " << rule << ",\t" << rule << "=>" << primitive << "\n";
 						return true;
 					}
 				}
 			}
 
-			// If we couldn't infer anything, than return false.
-			//std::cout << primitive << " = F\n";
+			// If we couldn't infer anything and couldn't find any assertions, than return false.
+			std::cout << primitive << " is not asserted\n";
 			return false;
 		}
 
