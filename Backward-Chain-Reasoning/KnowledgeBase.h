@@ -201,7 +201,6 @@ namespace backward_chain_reasoning
 			cout << "Program terminated.\n";
 		}
 
-		// tell
 		void tell(string sentence)
 		{
 			cleanInput(sentence);
@@ -224,17 +223,18 @@ namespace backward_chain_reasoning
 		 * 
 		 * The algorithm is depth first search since it does not stop expanding nodes until it meets a base case.
 		 * It works with both conjunction and disjunction prepositions as it uses a parser in Parser.h
-		 * understands how to evaluate these expressions.
+		 * that understands how to evaluate those expressions.
 		 */
 		bool ask(const string& query)
 		{
 			cout << "\n\nTrace:\nAsking: " << query << "\n";
-			unordered_map<string, bool> predicateToBoolMapping;
-			return ask(query, predicateToBoolMapping);
+			unordered_map<string, bool> predicateToBool;
+			unordered_map<string, bool> ruleExplored;
+			return ask(query, predicateToBool, ruleExplored);
 		}
 
 	private:
-		bool ask(const string& primitive, unordered_map<string, bool>& predicateToBoolMapping)
+		bool ask(const string& primitive, unordered_map<string, bool>& predicateToBoolMapping, unordered_map<string, bool>& ruleExploredMapping)
 		{
 			// Base case:
 			// If the primitive itself exists in the sentences of KB, it then has been asserted as a fact.
@@ -253,6 +253,18 @@ namespace backward_chain_reasoning
 			// Get all rules that infer the primitive
 			for (const string& rule : fetchInferenceRules(primitive))
 			{
+
+				// Prevent infinite recursion.
+				if (!ruleExploredMapping[rule])
+				{
+					ruleExploredMapping[rule] = true;
+				}
+				else
+				{
+					continue;
+				}
+
+				const bool isPrepositionOfConjunctions = find(rule.begin(), rule.end(), conjunction) != rule.end();
 				cout << "inference rule match: " << rule << "=>" << primitive << "\n";
 
 				// For every predicate that belongs to the inference rule, recursively prove it.
@@ -270,10 +282,16 @@ namespace backward_chain_reasoning
 					if (it == predicateToBoolMapping.end())
 					{
 						cout << "Asking: " << predicate << "\n";
-						predicateToBoolMapping.insert({ predicate, ask(predicate, predicateToBoolMapping) });
+						predicateToBoolMapping.insert({ predicate, ask(predicate, predicateToBoolMapping, ruleExploredMapping) });
 					}
 
-					// Return when ever our inference rule is proven to be true.
+					// Optimization: Return when ever our inference rule is proven to be true if it is made of disjunctions.
+					// Else if we find occurence where any predicate is false, a rule made of conjunctions will always be false.
+					if (isPrepositionOfConjunctions && !predicateToBoolMapping[predicate])
+					{
+						std::cout << primitive << " is not asserted\n";
+						return false;
+					}
 					if (evaluate(rule, predicateToBoolMapping))
 					{
 						cout << primitive << " can be inferred by " << rule << ",\t" << rule << "=>" << primitive << "\n";

@@ -125,6 +125,13 @@ namespace backward_chain_reasoning
 		kb3.tell("Y");
 		assert(kb3.ask("Z"));
 
+		/* Test sample 4, infinite recursion */
+		KnowledgeBase kb4;
+		kb4.tell("A>B");
+		kb4.tell("B>A");
+		assert(kb4.ask("A") == false);
+		assert(kb4.ask("B") == false);
+
 		cout << "testKnowledgeBaseAsk() successful.\n";
 	}
 
