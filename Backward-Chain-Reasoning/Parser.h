@@ -152,7 +152,8 @@ namespace backward_chain_reasoning
 	}
 
 	/* 
-	 * Evaluates a boolean expression.
+	 * Evaluates a boolean expression. Doesn't work for de morgans law if the expression isn't in
+	 * something like conjunction normal form.
 	 * 
 	 * Precondition: A string representing a boolean expression.
 	 * Post condition: Evaluation has a size of 1, as all sub expressions should

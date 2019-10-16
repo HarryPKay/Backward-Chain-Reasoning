@@ -125,12 +125,23 @@ namespace backward_chain_reasoning
 		kb3.tell("Y");
 		assert(kb3.ask("Z"));
 
-		/* Test sample 4, infinite recursion */
+		/* Test sample 4, infinite recursion termination */
 		KnowledgeBase kb4;
-		kb4.tell("A>B");
-		kb4.tell("B>A");
-		assert(kb4.ask("A") == false);
-		assert(kb4.ask("B") == false);
+		kb4.tell("A&B>C");
+		kb4.tell("C>A");
+		kb4.tell("C>B");
+		assert(kb4.ask("C") == false);
+
+		/* Test sample 5, same rule expanded more than once 
+		 * but not ruled out as infinite recursion.
+		 */
+		KnowledgeBase kb5;
+		kb5.tell("A");
+		kb5.tell("A>D");
+		kb5.tell("B>C");
+		kb5.tell("A>C");
+		kb5.tell("D&C>E");
+		assert(kb5.ask("E"));
 
 		cout << "testKnowledgeBaseAsk() successful.\n";
 	}

@@ -5,6 +5,7 @@
 #include <sstream>
 #include <map>
 #include <algorithm>
+#include "ModelChecker.h"
 
 namespace backward_chain_reasoning
 {
@@ -13,6 +14,7 @@ namespace backward_chain_reasoning
 	class KnowledgeBase
 	{
 	public:
+
 		static void cleanInput(string& input)
 		{
 			for (auto it = input.begin(); it != input.end(); ++it)
@@ -167,13 +169,34 @@ namespace backward_chain_reasoning
 		
 			} while (input != "nil");
 
-			cout << "You can now query the knowledge base.\nType quit to exit\n";
+			cout << "Would you like to print out the search trace for the reasoning? (y/n)\n";
+			do
+			{
+				cout << "> ";
+				getline(cin, input);
+				if (input == "y")
+				{
+					shouldPrintTrace = true;
+				}
+				else if (input != "n")
+				{
+					shouldPrintTrace = false;
+					cout << "Invalid input.\n";
+				}
+			} while (input != "y" && input != "n");
+
+			cout << "You can now query the knowledge base. Type quit to exit\n";
 
 			do
 			{
 				cout << "> ";
 				getline(cin, input);
 				cleanInput(input);
+
+				if (input.size() == 2 && input[1] == '?')
+				{
+					input.erase(input.begin() + 1, input.begin() + 2);
+				}
 
 				if (input == "quit")
 				{
@@ -201,117 +224,168 @@ namespace backward_chain_reasoning
 			cout << "Program terminated.\n";
 		}
 
-		void tell(string sentence)
+		/* Inserts a horn clause into the knowledge base.
+		 * Precondition: is either a conjunction clause (p1 & p2 & ... & pn)
+		 * or a injunction clause (p1 | p2 | ... | pn) or a fact (p).
+		 */
+		void tell(string hornClause)
 		{
-			cleanInput(sentence);
-			assert(validateTellInput(sentence));
-			sentences.push_back(sentence);
+			cleanInput(hornClause);
+			assert(validateTellInput(hornClause));
+			hornClauses.push_back(hornClause);
 		}
 
 		/*
-		 * Determines if the given query can be inferred from the knowledge base.
+		 * Depth first search that determines if the given query can be inferred from the knowledge base.
+		 * returns true if so.
 		 * 
-		 * Precondition: A single letter predicate (primitive) query.
-		 * returns true if the query can be inferred from the knowledge base.
+		 * Precondition: 
+		 * - A single letter predicate (primitive) query.
 		 * 
-		 * Algorithm description:
+		 * Base case:
+		 *  - The query exists in the form of P in the knowledge base.
+		 *  - The query does not exist in the form of P and no rule infers P.
+		 *  - The rule is in path.
 		 * 
-		 * The function will find all inference rules that infers the given query, for each of these rules
-		 * it will than recursively query each predicate of the rule until it can find an assertion/fact.
-		 * It stores those facts found as true in a mapping of predicate to boolean. If those assertions follow all the
-		 * way back to the original query, then that query can be inferred by the knowledge vase.
-		 * 
-		 * The algorithm is depth first search since it does not stop expanding nodes until it meets a base case.
-		 * It works with both conjunction and disjunction prepositions as it uses a parser in Parser.h
-		 * that understands how to evaluate those expressions.
+		 * General case:
+		 *  - There is a rule that infers P.		
 		 */
 		bool ask(const string& query)
 		{
-			cout << "\n\nTrace:\nAsking: " << query << "\n";
-			unordered_map<string, bool> predicateToBool;
-			unordered_map<string, bool> ruleExplored;
-			return ask(query, predicateToBool, ruleExplored);
+			if (shouldPrintTrace)
+			{
+				cout << "\n\nTrace:\n" << query << "?\n";
+			}
+			
+			unordered_map<string, bool> literalTruthTable;
+			const vector<string> path;
+			return ask(query, literalTruthTable, path);
 		}
 
 	private:
-		bool ask(const string& primitive, unordered_map<string, bool>& predicateToBoolMapping, unordered_map<string, bool>& ruleExploredMapping)
+		bool ask(const string& query, unordered_map<string, bool>& literalTruthTable, vector<string> path)
 		{
-			// Base case:
-			// If the primitive itself exists in the sentences of KB, it then has been asserted as a fact.
-
-			if (primitive.size() == 1 
-				&& find(sentences.begin(), sentences.end(), primitive) != sentences.end())
+			// If the query is in the knowledge base as a fact, then the fact is asserted.
+			if (query.size() == 1 
+				&& find(hornClauses.begin(), hornClauses.end(), query) != hornClauses.end())
 			{
-				cout << primitive << " is asserted\n";
+				if (shouldPrintTrace)
+				{
+					cout << query << " = True\n";
+				}
+				
 				return true;
 			}
 
-			// General case:
-			// The primitive does not exists as an assertion in the data base, so find an inference rule that
-			// implies that the primitive is true.
-			
-			// Get all rules that infer the primitive
-			for (const string& rule : fetchInferenceRules(primitive))
+			// Get all caluses that infer the query
+			for (const string& clause : fetchInferenceRules(query))
 			{
-
-				// Prevent infinite recursion.
-				if (!ruleExploredMapping[rule])
+				// If we have evaluated this path before then it may not complete
+				// return to prevent infinite recursion.
+				if (find(path.begin(), path.end(), clause) != path.end())
 				{
-					ruleExploredMapping[rule] = true;
-				}
-				else
-				{
-					continue;
+					if (shouldPrintTrace)
+					{
+						cout << "Path is not complete: ";
+						for (const auto& i : path)
+						{
+							cout << i << "->";
+						}
+						cout << clause << "\n";
+					}
+
+					return false;
 				}
 
-				const bool isPrepositionOfConjunctions = find(rule.begin(), rule.end(), conjunction) != rule.end();
-				cout << "inference rule match: " << rule << "=>" << primitive << "\n";
+				const bool clauseOfConjunctions = find(clause.begin(), clause.end(), conjunction) != clause.end();
+
+				if (shouldPrintTrace)
+				{
+					cout << clause << "=>" << query << "?\n";
+				}
 
 				// For every predicate that belongs to the inference rule, recursively prove it.
-				for (char c : rule)
+				for (const string& literal : getLiterals(clause))
 				{
-					if (isOperator(c))
+					// Optimization: 
+					// skip proving the predicate if it has already been proved.
+					auto it = literalTruthTable.find(literal);
+					if (it == literalTruthTable.end())
 					{
-						continue;
-					}
-					string predicate;
-					predicate.push_back(c);
-					
-					// Optimization: skip proving the predicate if it has already been proved.
-					auto it = predicateToBoolMapping.find(predicate);
-					if (it == predicateToBoolMapping.end())
-					{
-						cout << "Asking: " << predicate << "\n";
-						predicateToBoolMapping.insert({ predicate, ask(predicate, predicateToBoolMapping, ruleExploredMapping) });
+						if (shouldPrintTrace)
+						{
+							cout << literal << "?\n";
+						}
+
+						path.push_back(clause);
+						literalTruthTable.insert({ literal, ask(literal, literalTruthTable, path) });
+						path.pop_back();
 					}
 
-					// Optimization: Return when ever our inference rule is proven to be true if it is made of disjunctions.
-					// Else if we find occurence where any predicate is false, a rule made of conjunctions will always be false.
-					if (isPrepositionOfConjunctions && !predicateToBoolMapping[predicate])
+					// Optimization: 
+					// Return when ever our inference rule is proven to be true if it is made of disjunctions.
+					// If it is made of conjunctions, we can return false when any occurence is known to be false.
+					if (clauseOfConjunctions && !literalTruthTable[literal])
 					{
-						std::cout << primitive << " is not asserted\n";
+						if (shouldPrintTrace)
+						{
+							cout << clause << "=>" << query << " = False" << "\n";
+						}
+						
 						return false;
 					}
-					if (evaluate(rule, predicateToBoolMapping))
+					if (evaluate(clause, literalTruthTable))
 					{
-						cout << primitive << " can be inferred by " << rule << ",\t" << rule << "=>" << primitive << "\n";
+						if (shouldPrintTrace)
+						{
+							cout <<  clause << "=>" << query << " = True" << "\n";
+						}
+						
 						return true;
 					}
 				}
 			}
 
 			// If we couldn't infer anything and couldn't find any assertions, than return false.
-			std::cout << primitive << " is not asserted\n";
+			if (shouldPrintTrace)
+			{
+				std::cout << query << " = False\n";
+			}
+			
 			return false;
 		}
 
+		/* Returns a vector of size 1 atomic variables for the given horn clause. */
+		static vector<string> getLiterals(const string& hornClauses)
+		{
+			vector<string> literals;
+			for (auto atomic : hornClauses)
+
+			if (isPredicate(atomic))
+			{
+				string temp;
+				temp.push_back(atomic);
+				literals.push_back(temp);
+			}
+			return literals;
+		}
+
+		/* Returns a vector of hornClause that infers the hypothesis.
+		 * Precondition: hypothesis is an atomic variable of size 1.
+		 */
 		vector<string> fetchInferenceRules(const string& hypothesis)
 		{
-			vector<string> rules;
-			for (const auto& sentence : sentences)
+			vector<string> antecedents;
+
+			if (hypothesis.size() != 1)
+			{
+				return antecedents;
+			}
+
+			for (const auto& clause : hornClauses)
 			{
 				vector <string> tokens;
-				stringstream ss(sentence);
+				stringstream ss(clause);
 				string intermediate;
 				while (getline(ss, intermediate, implication))
 				{
@@ -325,13 +399,14 @@ namespace backward_chain_reasoning
 
 				if (tokens[1] == hypothesis)
 				{
-					rules.push_back(tokens[0]);
+					antecedents.push_back(tokens[0]);
 				}
 			}
 
-			return rules;
+			return antecedents;
 		}
 
-		vector<string> sentences;
+		vector<string> hornClauses;
+		bool shouldPrintTrace = true;
 	};
 }
