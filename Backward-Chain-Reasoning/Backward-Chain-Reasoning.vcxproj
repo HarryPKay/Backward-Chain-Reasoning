@@ -128,7 +128,7 @@
   <ItemGroup>
     <ClInclude Include="KnowledgeBase.h" />
     <ClInclude Include="Parser.h" />
-    <ClInclude Include="tests.h" />
+    <ClInclude Include="Tests.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />

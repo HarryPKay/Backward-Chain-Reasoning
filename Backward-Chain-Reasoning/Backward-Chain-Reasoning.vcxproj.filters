@@ -21,7 +21,7 @@
     <ClInclude Include="KnowledgeBase.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="tests.h">
+    <ClInclude Include="Tests.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

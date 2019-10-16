@@ -1,5 +1,5 @@
 #include "KnowledgeBase.h"
-#include "tests.h"
+#include "Tests.h"
 
 int main()
 {

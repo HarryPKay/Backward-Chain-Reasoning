@@ -5,7 +5,6 @@
 #include <sstream>
 #include <map>
 #include <algorithm>
-#include "ModelChecker.h"
 
 namespace backward_chain_reasoning
 {
